@@ -1,0 +1,41 @@
+export const COLORS = {
+  nude: '#e2d9ca',
+  oliveGreen: '#574407',
+  olive: '#936a0b',
+  desertSun: '#eb9830',
+};
+
+export const DEFAULT_BOX_INTERVALS: Record<string, number> = {
+  '1': 0,
+  '2': 1,
+  '3': 2,
+  '4': 4,
+  '5': 7,
+};
+
+export const BOX_INTERVALS = DEFAULT_BOX_INTERVALS;
+
+export const LEARNING_TIPS = [
+  "Lerne lieber öfter kurz (15 Min.) als einmal lang. Dein Gehirn verarbeitet Informationen in kleinen Häppchen besser.",
+  "Nutze Beispielsätze! Vokabeln im Kontext zu lernen, hilft dir, sie später auch richtig anzuwenden.",
+  "Wiederhole Vokabeln kurz vor dem Schlafengehen. Dein Gehirn festigt das Gelernte während du schläfst.",
+  "Sprich die Vokabeln laut aus. Das aktiviert zusätzliche Gehirnareale und verbessert deine Aussprache.",
+  "Verknüpfe neue Wörter mit Bildern oder Emotionen. Je mehr Sinne beteiligt sind, desto besser bleibt es hängen.",
+  "Sei geduldig mit dir selbst. Vergessen ist ein natürlicher Teil des Lernprozesses – die Wiederholung macht den Meister!",
+  "Lerne Vokabeln in Wortfamilien (z.B. Haus, Haustür, Hausdach), um dein Vokabular schneller zu erweitern.",
+  "Nutze die Box-Intervalle konsequent. Das Spaced Repetition System ist der effektivste Weg für das Langzeitgedächtnis."
+];
+
+export const CEFR_LEVELS = [
+  { id: 'A1', name: 'A1', count: 700 },
+  { id: 'A2', name: 'A2', count: 2000 },
+  { id: 'B1', name: 'B1', count: 4400 },
+  { id: 'B2', name: 'B2', count: 5900 },
+  { id: 'C1', name: 'C1', count: 7400 },
+  { id: 'C2', name: 'C2', count: 8900 },
+];
+
+export const EXAM_FORMATS = [
+  { id: 'exams', name: 'Goethe / ÖSD / TELC' },
+  { id: 'custom', name: 'Individuell' },
+];

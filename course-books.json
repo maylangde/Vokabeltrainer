@@ -1,0 +1,207 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { BarChart3, ChevronRight, Calculator, Calendar, Target, Info } from 'lucide-react';
+import { subDays } from 'date-fns';
+import { CEFR_LEVELS, EXAM_FORMATS } from '../constants';
+
+interface VocabCalculatorProps {
+  t: (k: any) => string;
+  learnedCount?: number;
+}
+
+export const VocabCalculator = ({ t, learnedCount = 0 }: VocabCalculatorProps) => {
+  const [format, setFormat] = useState('exams');
+  const [startLevel, setStartLevel] = useState('A1');
+  const [endLevel, setEndLevel] = useState('B1');
+  const [customGoal, setCustomGoal] = useState(2000);
+  const [manualStartCount, setManualStartCount] = useState<number | null>(null);
+  const [startDate, setStartDate] = useState(formatDateForInput(new Date()));
+  const [endDate, setEndDate] = useState(formatDateForInput(subDays(new Date(), -90))); 
+
+  useEffect(() => {
+    if (manualStartCount === null) {
+      setManualStartCount(learnedCount);
+    }
+  }, [learnedCount, manualStartCount]);
+
+  const lastLevelRef = useRef(startLevel);
+  useEffect(() => {
+    if (lastLevelRef.current !== startLevel) {
+      lastLevelRef.current = startLevel;
+      const levelCount = CEFR_LEVELS.find(l => l.id === startLevel)?.count || 0;
+      setManualStartCount(levelCount);
+    }
+  }, [startLevel]);
+
+  const calculation = useMemo(() => {
+    const startCount = manualStartCount ?? (CEFR_LEVELS.find(l => l.id === startLevel)?.count || 0);
+    const endCount = format === 'custom' ? customGoal : (CEFR_LEVELS.find(l => l.id === endLevel)?.count || 0);
+    const diff = Math.max(0, endCount - startCount);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const effectiveStart = start < now ? now : start;
+    const remainingDays = Math.max(1, Math.ceil((end.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    return {
+      daily: Math.ceil(diff / remainingDays),
+      total: endCount,
+      days: remainingDays,
+      start: startCount,
+      diff
+    };
+  }, [format, startLevel, endLevel, customGoal, startDate, endDate, manualStartCount]);
+
+  function formatDateForInput(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  return (
+    <div className="card !p-0 overflow-hidden border-brand/10 bg-brand-light/20">
+      <div className="p-4 flex items-center justify-between border-b border-brand/5 bg-white/50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+            <BarChart3 size={20} />
+          </div>
+          <div className="text-left">
+            <h4 className="text-sm font-black text-brand-dark">{t('vocab_calculator')}</h4>
+            <p className="text-[10px] text-brand-dark/40 font-medium uppercase tracking-widest">{t('plan_your_journey')}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest flex items-center gap-1.5">
+                <Target size={12} /> {t('goal_format')}
+              </label>
+              <div className="flex p-1 bg-brand/5 rounded-xl border border-brand/10">
+                {EXAM_FORMATS.map(f => (
+                  <button 
+                    key={f.id}
+                    onClick={() => setFormat(f.id)}
+                    className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                      format === f.id ? 'bg-white text-brand shadow-sm' : 'text-brand-dark/40 hover:text-brand-dark'
+                    }`}
+                  >
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest">{t('current_level')}</label>
+                <select 
+                  value={startLevel}
+                  onChange={(e) => setStartLevel(e.target.value)}
+                  className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-xs font-bold text-brand-dark focus:ring-2 focus:ring-brand outline-none"
+                >
+                  {CEFR_LEVELS.map(l => <option key={l.id} value={l.id}>{l.name} (~{l.count})</option>)}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest">{t('start_vocab_count')}</label>
+                <input 
+                  type="number" 
+                  value={manualStartCount ?? 0}
+                  onChange={(e) => setManualStartCount(parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-xs font-bold text-brand-dark outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+            </div>
+
+            {format === 'exams' ? (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest">{t('target_level')}</label>
+                <select 
+                  value={endLevel}
+                  onChange={(e) => setEndLevel(e.target.value)}
+                  className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-xs font-bold text-brand-dark focus:ring-2 focus:ring-brand outline-none"
+                >
+                  {CEFR_LEVELS.filter(l => CEFR_LEVELS.findIndex(x => x.id === l.id) >= CEFR_LEVELS.findIndex(x => x.id === startLevel)).map(l => (
+                    <option key={l.id} value={l.id}>{l.name} (~{l.count} Vokabeln)</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest">{t('custom_goal_count')}</label>
+                <input 
+                  type="number" 
+                  value={customGoal}
+                  onChange={(e) => setCustomGoal(parseInt(e.target.value) || 0)}
+                  className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-xs font-bold text-brand-dark outline-none focus:ring-2 focus:ring-brand"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+             <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-dark/40 uppercase tracking-widest flex items-center gap-1.5">
+                  <Calendar size={12} /> {t('time_range')}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-brand/40 uppercase ml-1">{t('start_date')}</span>
+                    <input 
+                      type="date" 
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-[10px] font-bold text-brand-dark outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[8px] font-black text-brand/40 uppercase ml-1">{t('exam_date')}</span>
+                    <input 
+                      type="date" 
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-brand/10 text-[10px] font-bold text-brand-dark outline-none"
+                    />
+                  </div>
+                </div>
+             </div>
+
+             <div className="p-5 bg-white rounded-[24px] border border-brand/10 shadow-sm space-y-4 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+                  <Calculator size={64} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-brand uppercase tracking-[0.2em]">{t('daily_requirement')}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black text-brand-dark">{calculation.daily}</span>
+                    <span className="text-xs font-bold text-brand-dark/40 uppercase">{t('new_words_per_day')}</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-brand/5 grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[8px] font-black text-brand-dark/40 uppercase">{t('remaining_words')}</p>
+                    <p className="text-xs font-black text-brand-dark">{calculation.diff}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] font-black text-brand-dark/40 uppercase">{t('remaining_days')}</p>
+                    <p className="text-xs font-black text-brand-dark">{calculation.days}</p>
+                  </div>
+                </div>
+             </div>
+          </div>
+        </div>
+
+        <div className="p-4 bg-brand/5 rounded-2xl flex items-start gap-3">
+          <Info className="text-brand shrink-0 mt-0.5" size={16} />
+          <p className="text-[10px] text-brand-dark/60 leading-relaxed">
+            {t('calc_info_text')}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,41 @@
+import { Vocabulary } from '../types';
+
+/**
+ * Normalizes German umlauts for deterministic IDs.
+ */
+export const sanitize = (s: string) => (s || '').toString()
+  .replace(/[äÄ]/g, 'ae')
+  .replace(/[öÖ]/g, 'oe')
+  .replace(/[üÜ]/g, 'ue')
+  .replace(/[ß]/g, 'ss')
+  .replace(/[^a-z0-9]/gi, '_')
+  .replace(/_+/g, '_')
+  .toLowerCase()
+  .trim()
+  .replace(/^_+|_+$/g, '');
+
+/**
+ * Generates a consistent key for identifying vocabulary.
+ */
+export const getVocabKey = (v: Vocabulary) => `${v.grundform.toLowerCase()}|${v.wortart}|${v.n_artikel || ''}`;
+
+/**
+ * Generates a deterministic cloudId for vocabulary across sessions.
+ */
+export const getDeterministicVocabId = (v: Partial<Vocabulary> | any, sourceName: string, sourceGroup?: string) => {
+  const sName = sanitize(sourceName || v.source_name || 'maylang');
+  const sGroup = sanitize(sourceGroup || v.source_group || '');
+  const prefix = sGroup ? `${sName}_${sGroup}` : sName;
+  
+  // CRITICAL: We MUST NOT use v.id if it's a local database ID (number).
+  // Use v.ID (often from Excel) or v.externalId or others.
+  let rowId = v.ID || v.Id || v.externalId || v.cloud_id || v.google_cloud_id;
+  
+  if (rowId && typeof rowId !== 'object' && typeof rowId !== 'undefined' && rowId !== null) {
+    return `${prefix}_${sanitize(rowId.toString())}`;
+  }
+  
+  const grundform = sanitize(v.grundform || v.Grundform || '');
+  const englisch = sanitize(v.englisch || v.Englisch || '');
+  return `${prefix}_${grundform}_${englisch}`;
+};
